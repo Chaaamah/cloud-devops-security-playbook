@@ -1,0 +1,42 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "CreateRolesOnlyWithTheBoundary",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:PutRolePolicy",
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:DeleteRolePolicy"
+      ],
+      "Resource": "arn:aws:iam::111122223333:role/app-*",
+      "Condition": {
+        "StringEquals": {
+          "iam:PermissionsBoundary": "arn:aws:iam::111122223333:policy/workload-permissions-boundary"
+        }
+      }
+    },
+    {
+      "Sid": "ManageOwnAppRolesWithoutChangingTheBoundary",
+      "Effect": "Allow",
+      "Action": ["iam:GetRole", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies",
+                 "iam:TagRole", "iam:DeleteRole", "iam:PassRole"],
+      "Resource": "arn:aws:iam::111122223333:role/app-*"
+    },
+    {
+      "Sid": "NeverRemoveOrReplaceTheBoundary",
+      "Effect": "Deny",
+      "Action": ["iam:DeleteRolePermissionsBoundary", "iam:PutRolePermissionsBoundary"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "NeverEditTheBoundaryPolicyItself",
+      "Effect": "Deny",
+      "Action": ["iam:CreatePolicyVersion", "iam:DeletePolicy", "iam:DeletePolicyVersion",
+                 "iam:SetDefaultPolicyVersion"],
+      "Resource": "arn:aws:iam::111122223333:policy/workload-permissions-boundary"
+    }
+  ]
+}

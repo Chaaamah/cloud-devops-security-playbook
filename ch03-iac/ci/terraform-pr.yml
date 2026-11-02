@@ -1,0 +1,47 @@
+# Lab 2: copy to .github/workflows/terraform-pr.yml in your infrastructure repository.
+# Pin every action to a full commit SHA before using this in production (Chapter 5).
+name: terraform-pr
+on:
+  pull_request:
+    paths: ["**.tf", "policy/**"]
+
+permissions:
+  contents: read
+  id-token: write          # OIDC to AWS, no stored keys (Chapter 7)
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/invoices
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Format and validate
+        run: |
+          terraform fmt -check -recursive ../..
+          terraform init -input=false
+          terraform validate
+
+      - name: Module tests (mocked provider, no cloud calls)
+        working-directory: modules/secure-bucket
+        run: terraform init -input=false && terraform test
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::111122223333:role/terraform-plan-readonly
+          aws-region: eu-west-1
+
+      - name: Plan
+        run: |
+          terraform plan -input=false -out=plan.out
+          terraform show -json plan.out > plan.json
+
+      - name: Policy check
+        run: |
+          CONFTEST_VERSION=0.56.0
+          curl -sSL "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xz conftest
+          ./conftest verify --policy ../../policy
+          ./conftest test plan.json --policy ../../policy

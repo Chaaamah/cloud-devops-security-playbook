@@ -1,0 +1,7 @@
+# Lab 1 baseline: what many teams ship. Compare its size and findings with Dockerfile.
+FROM golang:1.24
+WORKDIR /src
+COPY . .
+RUN go build -o /checkout ./cmd/checkout
+EXPOSE 8080
+CMD ["/checkout"]

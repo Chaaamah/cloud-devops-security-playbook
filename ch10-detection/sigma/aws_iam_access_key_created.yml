@@ -1,0 +1,26 @@
+title: AWS IAM Access Key Created
+id: 8303b1cb-95fb-4a96-97c9-e64f9c56089d
+status: experimental
+description: >
+  Detects the creation of a new IAM access key. Attackers who gain IAM permissions
+  add keys to existing users to keep access even after the original credential is revoked.
+references:
+  - https://attack.mitre.org/techniques/T1098/001/
+author: Chaima Agoumi
+date: 2026-11-01
+tags:
+  - attack.persistence
+  - attack.t1098.001
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection:
+    eventSource: iam.amazonaws.com
+    eventName: CreateAccessKey
+  filter_rotation_automation:
+    userIdentity.arn|contains: '/KeyRotationAutomation/'
+  condition: selection and not filter_rotation_automation
+falsepositives:
+  - Legacy users rotating their own keys (the goal is to have no IAM users with keys at all)
+level: medium

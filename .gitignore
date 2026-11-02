@@ -1,0 +1,28 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+plan.out
+plan.json
+crash.log
+.terraform.lock.hcl
+
+# Secrets
+.env
+*.pem
+*.key
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+
+# Scan outputs
+sbom*.json
+findings*.json
+
+# Editors
+.vscode/
+.idea/
+.DS_Store

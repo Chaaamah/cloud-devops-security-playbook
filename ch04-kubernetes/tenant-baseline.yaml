@@ -1,0 +1,58 @@
+# The baseline every tenant namespace receives (Chapter 4.5). Replace "team-a".
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-a
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: team-a-edit
+  namespace: team-a
+subjects:
+  - kind: Group
+    name: team-a                     # group name from your identity provider
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: edit                         # built-in role: no RBAC changes, no quota changes
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: team-a-quota
+  namespace: team-a
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: 40Gi
+    limits.memory: 40Gi
+    pods: "100"
+    services.loadbalancers: "0"     # expose through the shared gateway only
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: team-a-defaults
+  namespace: team-a
+spec:
+  limits:
+    - type: Container
+      defaultRequest: { cpu: 100m, memory: 128Mi }
+      default:        { memory: 256Mi }
+      max:            { cpu: "4", memory: 8Gi }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: team-a
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]

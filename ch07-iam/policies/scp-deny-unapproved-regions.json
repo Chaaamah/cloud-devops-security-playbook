@@ -1,0 +1,32 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyUnapprovedRegions",
+      "Effect": "Deny",
+      "NotAction": [
+        "iam:*",
+        "organizations:*",
+        "sts:*",
+        "support:*",
+        "cloudfront:*",
+        "route53:*",
+        "budgets:*",
+        "health:*",
+        "trustedadvisor:*",
+        "waf:*",
+        "shield:*",
+        "account:*"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringNotEquals": {
+          "aws:RequestedRegion": ["eu-west-1", "eu-west-3"]
+        },
+        "ArnNotLike": {
+          "aws:PrincipalArn": "arn:aws:iam::*:role/OrganizationAccountAccessRole"
+        }
+      }
+    }
+  ]
+}

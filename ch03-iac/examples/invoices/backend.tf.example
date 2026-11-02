@@ -1,0 +1,12 @@
+# Rename to backend.tf after creating the state bucket and KMS alias.
+terraform {
+  required_version = ">= 1.10"
+  backend "s3" {
+    bucket       = "acme-tfstate-prod-eu-west-1"
+    key          = "billing/invoices/terraform.tfstate"
+    region       = "eu-west-1"
+    encrypt      = true
+    kms_key_id   = "alias/tfstate"
+    use_lockfile = true      # native S3 locking
+  }
+}

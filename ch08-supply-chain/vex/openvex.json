@@ -1,0 +1,18 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://github.com/acme/checkout/vex/2026-001",
+  "author": "Platform Security <security@example.com>",
+  "timestamp": "2026-11-01T10:00:00Z",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": { "name": "CVE-2024-0001" },
+      "products": [
+        { "@id": "pkg:oci/checkout?repository_url=ghcr.io/acme/checkout" }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "The vulnerable XML parser is bundled by a dependency but checkout never parses XML."
+    }
+  ]
+}

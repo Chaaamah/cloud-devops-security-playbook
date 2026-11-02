@@ -1,0 +1,46 @@
+# Canary release of the Chapter 4 checkout Deployment, with automated analysis.
+# The Rollout reuses the Deployment's pod template through workloadRef.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: checkout
+  namespace: payments
+spec:
+  replicas: 6
+  selector:
+    matchLabels: { app: checkout }
+  workloadRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: checkout
+    scaleDown: progressively   # scale the old Deployment down as the Rollout scales up
+  strategy:
+    canary:
+      canaryService: checkout-canary
+      stableService: checkout-stable
+      steps:
+        - setWeight: 10
+        - analysis:
+            templates: [{ templateName: success-rate }]
+            args: [{ name: service-name, value: checkout-canary }]
+        - setWeight: 50
+        - pause: { duration: 10m }
+        - setWeight: 100
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkout-stable
+  namespace: payments
+spec:
+  selector: { app: checkout }     # Argo Rollouts adds the stable pod-template hash
+  ports: [{ name: http, port: 80, targetPort: 8080 }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkout-canary
+  namespace: payments
+spec:
+  selector: { app: checkout }     # Argo Rollouts adds the canary pod-template hash
+  ports: [{ name: http, port: 80, targetPort: 8080 }]

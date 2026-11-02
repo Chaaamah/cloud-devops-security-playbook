@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: payments
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout
+  namespace: payments
+spec:
+  replicas: 6
+  selector:
+    matchLabels: { app: checkout }
+  template:
+    metadata:
+      labels: { app: checkout }
+    spec:
+      priorityClassName: business-critical
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels: { app: checkout }
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: app
+          # Stand-in image for the labs (non-root, listens on 8080).
+          # In production, pin your own image by digest: registry.example.com/checkout@sha256:...
+          image: nginxinc/nginx-unprivileged:1.27-alpine
+          ports:
+            - containerPort: 8080
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits:   { memory: 64Mi }
+          readinessProbe:
+            httpGet: { path: /, port: 8080 }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: checkout
+  namespace: payments
+spec:
+  minAvailable: 4
+  selector:
+    matchLabels: { app: checkout }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: checkout
+  namespace: payments
+  labels: { app: checkout }
+spec:
+  selector: { app: checkout }
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080

@@ -1,0 +1,49 @@
+# Lab 3: OpenTelemetry Collector with tail-based sampling.
+# Keeps every trace with an error or slower than 1 s, and 5% of the rest.
+# tail_sampling ships in the "contrib" distribution (otel/opentelemetry-collector-contrib).
+receivers:
+  otlp:
+    protocols:
+      grpc: {}
+      http: {}
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+  attributes/scrub:
+    actions:
+      - key: user.email
+        action: delete             # never ship personal data to observability tools
+      - key: http.request.header.authorization
+        action: delete
+  tail_sampling:
+    decision_wait: 10s             # wait for all spans of a trace before deciding
+    num_traces: 50000
+    policies:
+      - name: keep-errors
+        type: status_code
+        status_code: { status_codes: [ERROR] }
+      - name: keep-slow
+        type: latency
+        latency: { threshold_ms: 1000 }
+      - name: sample-the-rest
+        type: probabilistic
+        probabilistic: { sampling_percentage: 5 }
+  batch: {}
+
+exporters:
+  otlphttp:
+    endpoint: https://otel-backend.internal.example.com
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes/scrub, tail_sampling, batch]
+      exporters: [otlphttp]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp]

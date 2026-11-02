@@ -1,0 +1,25 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ProtectSecurityTooling",
+      "Effect": "Deny",
+      "Action": [
+        "cloudtrail:StopLogging",
+        "cloudtrail:DeleteTrail",
+        "cloudtrail:UpdateTrail",
+        "guardduty:DeleteDetector",
+        "guardduty:UpdateDetector",
+        "config:StopConfigurationRecorder",
+        "config:DeleteConfigurationRecorder",
+        "organizations:LeaveOrganization"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "ArnNotLike": {
+          "aws:PrincipalArn": "arn:aws:iam::*:role/SecurityPlatformAdmin"
+        }
+      }
+    }
+  ]
+}

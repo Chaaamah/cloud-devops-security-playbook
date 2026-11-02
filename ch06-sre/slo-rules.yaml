@@ -1,0 +1,54 @@
+# Multi-window, multi-burn-rate alerts for a 99.9% availability SLO on checkout.
+# Recording rules keep the alert expressions short and cheap to evaluate.
+groups:
+  - name: checkout-slo-recording
+    rules:
+      - record: checkout:error_ratio:rate5m
+        expr: |
+          sum(rate(http_requests_total{job="checkout",code=~"5.."}[5m]))
+          / sum(rate(http_requests_total{job="checkout"}[5m]))
+      - record: checkout:error_ratio:rate30m
+        expr: |
+          sum(rate(http_requests_total{job="checkout",code=~"5.."}[30m]))
+          / sum(rate(http_requests_total{job="checkout"}[30m]))
+      - record: checkout:error_ratio:rate1h
+        expr: |
+          sum(rate(http_requests_total{job="checkout",code=~"5.."}[1h]))
+          / sum(rate(http_requests_total{job="checkout"}[1h]))
+      - record: checkout:error_ratio:rate6h
+        expr: |
+          sum(rate(http_requests_total{job="checkout",code=~"5.."}[6h]))
+          / sum(rate(http_requests_total{job="checkout"}[6h]))
+      - record: checkout:error_ratio:rate3d
+        expr: |
+          sum(rate(http_requests_total{job="checkout",code=~"5.."}[3d]))
+          / sum(rate(http_requests_total{job="checkout"}[3d]))
+
+  - name: checkout-slo-alerts
+    rules:
+      - alert: CheckoutErrorBudgetFastBurn
+        expr: |
+          checkout:error_ratio:rate1h > (14.4 * 0.001)
+          and checkout:error_ratio:rate5m > (14.4 * 0.001)
+        labels: { severity: page }
+        annotations:
+          summary: "Checkout is burning its error budget 14x too fast (2% per hour)"
+          runbook: "https://runbooks.example.com/checkout/error-budget"
+
+      - alert: CheckoutErrorBudgetSlowBurn
+        expr: |
+          checkout:error_ratio:rate6h > (6 * 0.001)
+          and checkout:error_ratio:rate30m > (6 * 0.001)
+        labels: { severity: page }
+        annotations:
+          summary: "Checkout is burning its error budget 6x too fast (5% per 6 hours)"
+          runbook: "https://runbooks.example.com/checkout/error-budget"
+
+      - alert: CheckoutErrorBudgetTicket
+        expr: |
+          checkout:error_ratio:rate3d > (1 * 0.001)
+          and checkout:error_ratio:rate6h > (1 * 0.001)
+        labels: { severity: ticket }
+        annotations:
+          summary: "Checkout will exhaust its 30-day error budget at the current rate"
+          runbook: "https://runbooks.example.com/checkout/error-budget"

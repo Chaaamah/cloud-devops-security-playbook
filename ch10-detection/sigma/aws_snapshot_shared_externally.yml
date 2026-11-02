@@ -1,0 +1,31 @@
+title: AWS EBS or RDS Snapshot Shared With Another Account
+id: 61ffdd0e-ffe1-4250-a6ff-e3e45b7624c9
+status: experimental
+description: >
+  Detects permission changes that let another AWS account restore an EBS or RDS snapshot,
+  a quiet way to exfiltrate whole disks or databases.
+references:
+  - https://attack.mitre.org/techniques/T1537/
+author: Chaima Agoumi
+date: 2026-11-01
+tags:
+  - attack.exfiltration
+  - attack.t1537
+logsource:
+  product: aws
+  service: cloudtrail
+detection:
+  selection_ebs:
+    eventSource: ec2.amazonaws.com
+    eventName: ModifySnapshotAttribute
+    requestParameters.attributeType: CREATE_VOLUME_PERMISSION
+  selection_rds:
+    eventSource: rds.amazonaws.com
+    eventName:
+      - ModifyDBSnapshotAttribute
+      - ModifyDBClusterSnapshotAttribute
+    requestParameters.attributeName: restore
+  condition: 1 of selection_*
+falsepositives:
+  - Planned sharing with a backup or disaster-recovery account (allow-list those account IDs)
+level: high

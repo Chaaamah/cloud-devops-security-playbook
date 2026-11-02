@@ -1,0 +1,16 @@
+# A policy exception, recorded as code and reviewed like any other change.
+# A scheduled job turns expired exceptions back into violations.
+id: EXC-2026-007
+control: s3-bucket-public-read-prohibited
+resource: arn:aws:s3:::acme-public-website-assets
+owner: web-team@example.com
+approved_by: security-platform@example.com
+justification: >
+  Static assets for the public website must be readable by anyone.
+  The bucket contains no personal or confidential data.
+compensating_controls:
+  - Bucket served only through CloudFront; direct access logged
+  - Object writes restricted to the web deployment role
+  - Weekly scan confirms no non-public file types are present
+created: 2026-11-01
+expires: 2027-05-01          # at most 6 months, then re-justify

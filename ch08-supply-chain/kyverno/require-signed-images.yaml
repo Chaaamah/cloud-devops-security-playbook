@@ -1,0 +1,27 @@
+# Refuse any pod whose ghcr.io/acme/* image was not signed by the release workflow.
+# Start with failureAction: Audit for a week, then switch to Enforce.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-signed-images
+spec:
+  webhookTimeoutSeconds: 15
+  rules:
+    - name: verify-acme-images
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      verifyImages:
+        - imageReferences:
+            - "ghcr.io/acme/*"
+          failureAction: Enforce        # Kyverno 1.13+; older versions use spec.validationFailureAction
+          mutateDigest: true            # rewrite tags to digests
+          verifyDigest: true
+          attestors:
+            - entries:
+                - keyless:
+                    subject: "https://github.com/acme/*/.github/workflows/release.yml@refs/heads/main"
+                    issuer: "https://token.actions.githubusercontent.com"
+                    rekor:
+                      url: https://rekor.sigstore.dev
